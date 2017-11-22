@@ -94,6 +94,34 @@ router.get('/test', (req, res, next) => {
     })
   })
 })
+//添加照片
+.post('/addPic',(req,res,next) => {
+  var form =new formidable.IncomingForm()
+  let rootPath =path.join(__dirname,'resource')
+  // 这只默认上传目录
+  form.uploadDir=rootPath
+  form.parse(req,function(err,fields,files){
+    if(err) return next(err)
+    let filename =path.parse(files.pic.path).base
+    let dist =path.join(rootPath,fields.dir,filename)
+    fse.move(files.pic.path,dist,(err) => {
+    if(err) return next(err)
+    //将数据保存进数据库
+    let db_file=`/resource/${fields.dir}/${filename}`
+    let db_dir =fields.dir
+
+    pool.getConnection((err,connection) => {
+      if(err) return next(err)
+      connection.query('insert into album_file value (?,?)',[db_file,db_dir],(error,result) => {
+        connection.release()
+        if(err) return next(err)
+        res.redirect('/showDir?dir='+db_dir)
+      })
+    })
+
+    })
+  })
+})
 
 //处理静态资源
 // /public/vender/bootstrap/js/bootstrap.js
